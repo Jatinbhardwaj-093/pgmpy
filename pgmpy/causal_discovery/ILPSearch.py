@@ -108,6 +108,10 @@ class ILPSearch(BaseCausalDiscovery):
     feature_names_in_ : np.ndarray
         The feature names in the dataset used for fitting.
 
+    milp_result_ : scipy.optimize.OptimizeResult
+        The raw optimization result returned by the underlying ``scipy.optimize.milp`` solver.
+        Contains solver status, objective value, and full decision variable array.
+
     Examples
     --------
     >>> import pandas as pd
@@ -268,11 +272,12 @@ class ILPSearch(BaseCausalDiscovery):
         seen_pairs = set()
         for j, k in directed_edges:
             pair = tuple(sorted((j, k)))
-            if pair not in seen_pairs and (k, j) in directed_edge_index:
+            if pair not in seen_pairs:
                 seen_pairs.add(pair)
                 row = np.zeros(n_solver_vars)
                 row[offset_z + directed_edge_index[(j, k)]] = 1
-                row[offset_z + directed_edge_index[(k, j)]] = 1
+                if (k, j) in directed_edge_index:
+                    row[offset_z + directed_edge_index[(k, j)]] = 1
                 constraint_rows.append(row)
                 constraint_lb.append(1.0)
                 constraint_ub.append(1.0)
@@ -311,15 +316,15 @@ class ILPSearch(BaseCausalDiscovery):
 
         # (C) Layer Acyclicity: z_jk - (m-1)*z_kj - psi_k + psi_j <= 0
         for j, k in directed_edges:
+            row = np.zeros(n_solver_vars)
+            row[offset_z + directed_edge_index[(j, k)]] = 1
             if (k, j) in directed_edge_index:
-                row = np.zeros(n_solver_vars)
-                row[offset_z + directed_edge_index[(j, k)]] = 1
                 row[offset_z + directed_edge_index[(k, j)]] = -(self.n_features_in_ - 1)
-                row[offset_psi + j] = 1
-                row[offset_psi + k] = -1
-                constraint_rows.append(row)
-                constraint_lb.append(-np.inf)
-                constraint_ub.append(0.0)
+            row[offset_psi + j] = 1
+            row[offset_psi + k] = -1
+            constraint_rows.append(row)
+            constraint_lb.append(-np.inf)
+            constraint_ub.append(0.0)
 
         constraint_matrix = csc_matrix(constraint_rows) if constraint_rows else csc_matrix((0, n_solver_vars))
         linear_constraints = LinearConstraint(constraint_matrix, cast(Any, constraint_lb), cast(Any, constraint_ub))
