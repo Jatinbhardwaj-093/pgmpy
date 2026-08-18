@@ -21,8 +21,8 @@ def generate_synthetic_sem(n_nodes=10, edge_prob=0.25, n_samples=500, noise_scal
     G_raw = nx.gnp_random_graph(n_nodes, edge_prob, directed=True, seed=seed)
     adj = np.triu(nx.to_numpy_array(G_raw), k=1)
 
-    # 2. Edge weights sampled uniformly from [-2.0, -0.5] U [0.5, 2.0]
-    weights = rng.uniform(0.5, 2.0, size=adj.shape) * rng.choice([-1, 1], size=adj.shape)
+    # 2. Edge weights sampled uniformly from [0.1, 1.0]
+    weights = rng.uniform(0.1, 1.0, size=adj.shape)
     W = adj * weights
 
     # 3. Continuous dataset simulation: X = Noise * (I - W)^(-1)
