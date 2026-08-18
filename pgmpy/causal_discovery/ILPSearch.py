@@ -336,6 +336,8 @@ class ILPSearch(BaseCausalDiscovery):
         if not res.success and res.x is None:
             raise RuntimeError(f"ILP optimization failed: {res.status} ({res.message})")
 
+        self.milp_result_ = res
+
         # Step 7: Extract Graph
         sol_z = res.x[offset_z : offset_z + num_directed_edges]
         sol_act = res.x[offset_g : offset_g + num_directed_edges] if has_g else sol_z
