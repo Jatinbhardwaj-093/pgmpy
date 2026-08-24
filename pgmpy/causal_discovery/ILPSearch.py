@@ -176,7 +176,9 @@ class ILPSearch(BaseCausalDiscovery):
         if self.expert_knowledge is not None and self.expert_knowledge.search_space:
             search_space = set(ek.search_space_)
         else:
-            search_space = set(ExpertKnowledge(search_space="marginally_dependent").fit(X).search_space_)
+            import itertools
+
+            search_space = set(itertools.permutations(list(X.columns), 2))
 
         candidate_pairs = (search_space | required_edges) - forbidden_edges
 
